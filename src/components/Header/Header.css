@@ -1,0 +1,42 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2rem 9%;
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  z-index: 9999;
+  background: #fff;
+  box-shadow: var(--box-shadow);
+}
+
+.header img {
+  height: 4.5rem; /* Adjust the height of the logo image */
+}
+
+.header .icons button {
+  height: 4.5rem;
+  width: 4.5rem;
+  line-height: 4.5rem;
+  margin-left: 0.5rem;
+  cursor: pointer;
+  text-align: center;
+  font-size: 2rem;
+  background: #eee;
+  border-radius: 0.5rem;
+}
+.header .icons button .fa-icon {
+  color: var(--black);
+  transition-duration: 0s;
+}
+.header .icons button:hover .fa-icon {
+  color: #fff;
+}
+.header .icons button:hover {
+  background: var(--orange);
+}
+.header .icons #menu-btn {
+  display: none;
+}

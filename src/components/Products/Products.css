@@ -1,0 +1,39 @@
+.products .products-slider .wrapper {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); 
+  gap: 1.5rem;
+}
+
+.products .products-slider .box {
+  text-align: center;
+  box-shadow: var(--box-shadow);
+  outline: var(--outline);
+  outline-offset: -1rem;
+  padding: 3rem 2rem;
+  transition: linear 0.2s;
+  background: #fff;
+}
+
+.products .products-slider .box:hover {
+  outline-offset: -1;
+  outline: var(--outline-hover);
+}
+
+.products .products-slider .box img {
+  height: 15rem;
+  margin: 0 auto; 
+  display: block; 
+  
+}
+
+.products .products-slider .box h3 {
+  font-size: 2rem;
+  line-height: 1.8;
+  color: var(--black);
+}
+
+.products .products-slider .box .price {
+  color: var(--light-color);
+  font-size: 1.7rem;
+  padding: 1rem 0;
+}
