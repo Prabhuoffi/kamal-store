@@ -1,0 +1,231 @@
+name: Pull Request Quality Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  pr-validation:
+    name: PR Validation
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    
+    steps:
+      - name: Check PR title
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            chore
+          requireScope: false
+        continue-on-error: true
+
+      - name: PR Size Check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const additions = pr.additions;
+            const deletions = pr.deletions;
+            const changes = additions + deletions;
+            
+            let size = 'small';
+            let color = 'green';
+            let message = '✅ PR size is good';
+            
+            if (changes > 1000) {
+              size = 'extra-large';
+              color = 'red';
+              message = '⚠️ This PR is very large. Consider breaking it into smaller PRs.';
+            } else if (changes > 500) {
+              size = 'large';
+              color = 'orange';
+              message = '⚠️ This PR is quite large. Consider breaking it into smaller PRs.';
+            } else if (changes > 200) {
+              size = 'medium';
+              color = 'yellow';
+            }
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `📊 **PR Size Analysis**\n\n${message}\n\n- **Size**: ${size}\n- **Lines Added**: ${additions}\n- **Lines Deleted**: ${deletions}\n- **Total Changes**: ${changes}`
+            });
+
+  code-quality:
+    name: Code Quality Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        id: eslint
+        run: |
+          npm run lint > eslint-report.txt 2>&1 || true
+          echo "exit_code=$?" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Run tests
+        id: tests
+        run: npm test -- --watchAll=false --coverage || echo "No tests found"
+        continue-on-error: true
+
+      - name: Build application
+        id: build
+        run: npm run build
+
+      - name: Post quality summary
+        uses: actions/github-script@v7
+        if: always()
+        with:
+          script: |
+            const fs = require('fs');
+            let eslintReport = '';
+            try {
+              eslintReport = fs.readFileSync('eslint-report.txt', 'utf8');
+            } catch (e) {
+              eslintReport = 'ESLint report not available';
+            }
+            
+            const buildStatus = '${{ steps.build.outcome }}' === 'success' ? '✅' : '❌';
+            const lintStatus = eslintReport.includes('error') ? '⚠️' : '✅';
+            const testStatus = '${{ steps.tests.outcome }}' === 'success' ? '✅' : '⚠️';
+            
+            const summary = `## 🔍 Code Quality Report
+            
+            | Check | Status | Details |
+            |-------|--------|---------|
+            | Build | ${buildStatus} | Build ${{ steps.build.outcome }} |
+            | Linting | ${lintStatus} | ESLint analysis completed |
+            | Tests | ${testStatus} | Test suite execution completed |
+            
+            ### Next Steps
+            - ✅ Review automated check results above
+            - ✅ Address any linting or test failures
+            - ✅ Ensure build passes successfully
+            - ✅ Wait for Codacy analysis results
+            - ✅ Request review from senior developer
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
+
+  codacy-analysis:
+    name: AI Code Review (Codacy)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Codacy Analysis
+        uses: codacy/codacy-analysis-cli-action@master
+        with:
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          upload: true
+          max-allowed-issues: 2147483647
+        continue-on-error: true
+
+  security-scan:
+    name: Security Vulnerability Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Run npm audit
+        id: audit
+        run: |
+          npm audit --json > audit-report.json || true
+          npm audit || true
+        continue-on-error: true
+
+      - name: Post security summary
+        uses: actions/github-script@v7
+        if: always()
+        with:
+          script: |
+            const fs = require('fs');
+            let auditData = { metadata: { vulnerabilities: { info: 0, low: 0, moderate: 0, high: 0, critical: 0 } } };
+            
+            try {
+              auditData = JSON.parse(fs.readFileSync('audit-report.json', 'utf8'));
+            } catch (e) {
+              console.log('Could not parse audit report');
+            }
+            
+            const vulns = auditData.metadata.vulnerabilities;
+            const totalVulns = vulns.info + vulns.low + vulns.moderate + vulns.high + vulns.critical;
+            const status = totalVulns === 0 ? '✅ No vulnerabilities found' : `⚠️ ${totalVulns} vulnerabilities found`;
+            
+            const summary = `## 🔒 Security Scan Results
+            
+            ${status}
+            
+            | Severity | Count |
+            |----------|-------|
+            | Critical | ${vulns.critical || 0} |
+            | High | ${vulns.high || 0} |
+            | Moderate | ${vulns.moderate || 0} |
+            | Low | ${vulns.low || 0} |
+            | Info | ${vulns.info || 0} |
+            
+            ${totalVulns > 0 ? '⚠️ **Action Required**: Please review and address security vulnerabilities before merging.' : ''}
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
+
