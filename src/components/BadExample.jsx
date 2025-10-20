@@ -25,8 +25,7 @@ const BadExample = () => {
     }
   };
 
-  // Error 3: Console.log in production code
-  console.log('Component rendered');
+
 
   // Error 4: Inline styles instead of CSS classes
   const buttonStyle = {

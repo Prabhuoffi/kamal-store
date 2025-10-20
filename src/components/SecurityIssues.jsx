@@ -36,7 +36,6 @@ const SecurityIssues = () => {
   // Error 6: SQL injection vulnerability (simulated)
   const searchUsers = (searchTerm) => {
     const query = `SELECT * FROM users WHERE name = '${searchTerm}'`; // SQL injection
-    console.log(query);
   };
 
   // Error 7: No CSRF protection

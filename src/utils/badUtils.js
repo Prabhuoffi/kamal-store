@@ -23,7 +23,6 @@ export const get_user_email = (user) => {
 
 // Error 5: Side effects in utility function
 export const formatDate = (date) => {
-  console.log('Formatting date:', date); // Side effect
   return new Date(date).toLocaleDateString();
 };
 
