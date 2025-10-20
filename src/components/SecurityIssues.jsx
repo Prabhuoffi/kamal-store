@@ -1,50 +1,81 @@
 import React, { useState } from 'react';
 
-// Security issues for PR review practice
+// Secure component with all security issues fixed
 const SecurityIssues = () => {
   const [userInput, setUserInput] = useState('');
-  const [apiKey, setApiKey] = useState('sk-1234567890abcdef'); // Error 1: Hardcoded API key
+  const [apiKey, setApiKey] = useState(''); // Fixed: No hardcoded API key
 
-  // Error 2: No input sanitization
+  // Fixed: Input sanitization and XSS prevention
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Directly using user input without sanitization
-    document.getElementById('output').innerHTML = userInput;
+    // Use textContent instead of innerHTML to prevent XSS
+    const outputElement = document.getElementById('output');
+    if (outputElement) {
+      outputElement.textContent = userInput;
+    }
   };
 
-  // Error 3: Exposed sensitive data
+  // Fixed: No sensitive data exposed
   const userData = {
-    password: 'user123', // Error: Plain text password
-    ssn: '123-45-6789', // Error: Exposed SSN
-    apiKey: apiKey
+    name: 'John Doe',
+    email: 'john@example.com'
+    // Removed: password, ssn, apiKey
   };
 
-  // Error 4: No HTTPS enforcement
+  // Fixed: HTTPS enforcement
   const fetchData = async () => {
-    const response = await fetch('http://api.example.com/data'); // HTTP instead of HTTPS
-    return response.json();
+    try {
+      const response = await fetch('https://api.example.com/data'); // HTTPS
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    } catch (error) {
+      console.error('Fetch error:', error);
+      throw error;
+    }
   };
 
-  // Error 5: No authentication check
+  // Fixed: Authentication check
   const deleteUser = async (userId) => {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+    
     await fetch(`/api/users/${userId}`, {
-      method: 'DELETE'
-      // No authentication headers
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
     });
   };
 
-  // Error 6: SQL injection vulnerability (simulated)
-  const searchUsers = (searchTerm) => {
-    const query = `SELECT * FROM users WHERE name = '${searchTerm}'`; // SQL injection
+  // Fixed: SQL injection prevention (parameterized query)
+  const searchUsers = async (searchTerm) => {
+    // Use parameterized queries instead of string concatenation
+    const response = await fetch('/api/users/search', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+      },
+      body: JSON.stringify({ searchTerm })
+    });
+    return response.json();
   };
 
-  // Error 7: No CSRF protection
+  // Fixed: CSRF protection
   const updateProfile = async (data) => {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    
     await fetch('/api/profile', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
-        // Missing CSRF token
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': csrfToken,
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
       },
       body: JSON.stringify(data)
     });
@@ -52,22 +83,24 @@ const SecurityIssues = () => {
 
   return (
     <div>
-      <h1>Security Issues Component</h1>
+      <h1>Secure Component</h1>
       <form onSubmit={handleSubmit}>
         <input
           type="text"
           value={userInput}
           onChange={(e) => setUserInput(e.target.value)}
           placeholder="Enter some text"
+          maxLength={100} // Input validation
         />
         <button type="submit">Submit</button>
       </form>
       <div id="output"></div>
       
-      {/* Error 8: Exposed sensitive data in render */}
+      {/* Fixed: No sensitive data exposed */}
       <div>
-        <p>API Key: {apiKey}</p>
-        <p>User Data: {JSON.stringify(userData)}</p>
+        <p>User: {userData.name}</p>
+        <p>Email: {userData.email}</p>
+        {/* Removed: API Key and sensitive user data */}
       </div>
     </div>
   );

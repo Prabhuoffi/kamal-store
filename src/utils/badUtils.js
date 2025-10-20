@@ -37,7 +37,4 @@ export const isAdult = (age) => {
   return age >= 18; // Should be a constant
 };
 
-// Error 8: No default export
-const helperFunction = () => {
-  return 'helper';
-};
+
