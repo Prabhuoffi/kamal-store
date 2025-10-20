@@ -1,0 +1,59 @@
+---
+# Codacy Configuration File
+# This file configures code quality analysis for the kamal-store project
+
+# Exclude directories and files from analysis
+exclude_paths:
+  - 'node_modules/**'
+  - 'build/**'
+  - 'dist/**'
+  - 'coverage/**'
+  - '*.min.js'
+  - '*.min.css'
+  - 'package-lock.json'
+  - 'public/image/**'
+
+# Engine configurations
+engines:
+  # ESLint for JavaScript/JSX analysis
+  eslint:
+    enabled: true
+    exclude_paths:
+      - 'node_modules/**'
+      - 'build/**'
+  
+  # StyleLint for CSS analysis
+  stylelint:
+    enabled: true
+    exclude_paths:
+      - 'node_modules/**'
+      - 'build/**'
+  
+  # Metrics engine for complexity analysis
+  metrics:
+    enabled: true
+    exclude_paths:
+      - 'node_modules/**'
+      - 'build/**'
+  
+  # Duplication detection
+  duplication:
+    enabled: true
+    exclude_paths:
+      - 'node_modules/**'
+      - 'build/**'
+    config:
+      languages:
+        - javascript
+        - css
+
+# Coverage settings
+coverage:
+  enabled: true
+  exclude_paths:
+    - 'node_modules/**'
+    - 'build/**'
+    - 'public/**'
+    - '**/*.test.js'
+    - '**/*.test.jsx'
+
