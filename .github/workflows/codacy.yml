@@ -14,6 +14,10 @@ jobs:
   codacy-security-scan:
     name: Codacy Security Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
     
     steps:
       - name: Checkout code
@@ -22,21 +26,16 @@ jobs:
       - name: Run Codacy Analysis CLI
         uses: codacy/codacy-analysis-cli-action@master
         with:
-          output: results.sarif
-          format: sarif
-          # Adjust gh-code-scanning-compat to true to force 0 exit code for the CLI.
-          gh-code-scanning-compat: true
-          # Force 0 exit code to allow CI to continue
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          upload: true
           max-allowed-issues: 2147483647
-
-      - name: Upload SARIF results file
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: results.sarif
+        continue-on-error: true
 
   codacy-coverage-reporter:
     name: Codacy Coverage Reporter
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout code
